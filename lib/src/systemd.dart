@@ -4,9 +4,16 @@ import 'dart:io';
 import 'package:args/args.dart';
 
 class SystemdConfig {
-  SystemdConfig(this.unit, {this.dartPath = '/usr/lib/dart/bin/dart', this.execPath = 'main.dart', 
-  this.runAfter = const ['nginx.service','postgres.service',], this.requires = const ['postgresql.service'],
-  this.sdPath = '/etc/systemd/system', this.rsyslogPath = '/etc/rsyslog.d'});
+  SystemdConfig(this.unit,
+      {this.dartPath = '/usr/lib/dart/bin/dart',
+      this.execPath = 'main.dart',
+      this.runAfter = const [
+        'nginx.service',
+        'postgres.service',
+      ],
+      this.requires = const ['postgresql.service'],
+      this.sdPath = '/etc/systemd/system',
+      this.rsyslogPath = '/etc/rsyslog.d'});
   final List<String> runAfter;
   final List<String> requires;
   final String unit;
@@ -18,15 +25,12 @@ class SystemdConfig {
 
 class Systemd {
   Systemd(this.args, this.config) {
-    if (config == null) {
-      throw ArgumentError.notNull('config');
-    }
     args.addFlag('systemd-generate', abbr: 'G', defaultsTo: null);
   }
   final ArgParser args;
   final SystemdConfig config;
   final String cd = Directory.current.absolute.path;
-  
+
   Future<void> process(ArgResults res) async {
     if (res['systemd-generate'] != null) {
       try {
@@ -60,8 +64,7 @@ class Systemd {
     }
     final afters = afterBuf.toString();
     final requires = requiresBuf.toString();
-    final conf = 
-'''[Unit]
+    final conf = '''[Unit]
 Description=${config.unit}
 $afters
 $requires
@@ -80,7 +83,7 @@ SyslogIdentifier=${config.unit}
 [Install]
 WantedBy=multi-user.target
 ''';
-  
+
     final out = File('${config.sdPath}/${config.unit}.service');
     if (out.existsSync()) {
       try {
@@ -96,13 +99,13 @@ WantedBy=multi-user.target
       print('Cannot create file ${out.path}:\n$e');
     }
   }
-  
+
   Future<void> _generateRsyslogScript() async {
     final fRsyslogConf = File('${config.rsyslogPath}/${config.unit}.conf');
     final logFile = File('${cd}/${config.unit}.log');
     try {
       await fRsyslogConf.writeAsString(
-        """if \$programname == '${config.unit}' then ${logFile.path}
+          """if \$programname == '${config.unit}' then ${logFile.path}
         & stop""");
     } on Exception catch (e) {
       print('Cannot create file ${fRsyslogConf.path}:\n $e');
